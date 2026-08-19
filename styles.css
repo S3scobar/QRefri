@@ -1,0 +1,379 @@
+:root {
+  --bg: #090613;
+  --surface: #140e26;
+  --surface-hover: #1c1436;
+  --border: #2e1d52;
+  --border-focus: #a855f7;
+
+  --text: #f5f3ff;
+  --text-muted: #8b7ca8;
+
+  --purple-main: #9333ea;
+  --purple-neon: #a855f7;
+  --purple-glow: rgba(168, 85, 247, 0.25);
+  --cyan-accent: #06b6d4;
+  --pink-neon: #ec4899;
+  --red: #f43f5e;
+
+  --radius: 12px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(147, 51, 234, 0.18), transparent 45%),
+    radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.08), transparent 40%);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 24px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Header */
+header {
+  text-align: center;
+}
+
+h1 {
+  font-size: 1.6rem;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #f5f3ff 30%, #c084fc 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 3px;
+}
+
+/* Acceso Rápido */
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--purple-neon);
+  margin-bottom: 8px;
+}
+
+.quick-buttons {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.quick-buttons::-webkit-scrollbar {
+  display: none;
+}
+
+.btn-quick {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-quick:hover {
+  border-color: var(--purple-neon);
+  box-shadow: 0 0 10px var(--purple-glow);
+}
+
+.btn-quick:active {
+  transform: scale(0.95);
+  background: var(--purple-main);
+}
+
+/* Formulario */
+.item-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 14px;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.input-row {
+  display: flex;
+  gap: 6px;
+}
+
+input, select {
+  background: #0d091a;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  outline: none;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus {
+  border-color: var(--purple-neon);
+  box-shadow: 0 0 8px var(--purple-glow);
+}
+
+#item-input {
+  flex: 2;
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+#quantity-input {
+  flex: 1;
+  padding: 10px 6px;
+  min-width: 0;
+  text-align: center;
+}
+
+#category-select {
+  flex: 1.1;
+  padding: 10px 6px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+#btn-add {
+  background: linear-gradient(135deg, var(--purple-main), #7e22ce);
+  color: #fff;
+  border: none;
+  padding: 11px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(147, 51, 234, 0.35);
+  transition: all 0.2s ease;
+}
+
+#btn-add:active {
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+/* Barra de Acciones */
+.actions-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.actions-bar button {
+  padding: 9px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+#btn-whatsapp {
+  border: 1px solid #10b98155;
+  color: #34d399;
+}
+
+#btn-whatsapp:active {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+#btn-clear-done {
+  border: 1px solid #f43f5e44;
+  color: #fb7185;
+}
+
+#btn-clear-done:active {
+  background: rgba(244, 63, 94, 0.15);
+}
+
+/* Listas */
+.list-section h2 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin-bottom: 8px;
+}
+
+.items-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.item-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.2s;
+}
+
+.item-card:hover {
+  background: var(--surface-hover);
+}
+
+.item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.item-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 19px;
+  height: 19px;
+  border: 2px solid var(--border-focus);
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.item-checkbox:checked {
+  background: var(--purple-neon);
+  box-shadow: 0 0 8px var(--purple-glow);
+}
+
+.item-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  color: #fff;
+  font-size: 13px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.item-qty-badge {
+  background: #251642;
+  color: var(--cyan-accent);
+  border: 1px solid #3d236d;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 5px;
+  margin-left: 6px;
+}
+
+.item-badge {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+
+.btn-delete:hover {
+  color: var(--red);
+}
+
+/* Completados */
+.completed-section .item-card {
+  opacity: 0.4;
+  border-style: dashed;
+}
+
+.completed-section .item-title {
+  text-decoration: line-through;
+}
+
+/* Marca de agua fija en la esquina */
+.app-watermark {
+  position: fixed;
+  bottom: 16px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.65;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+}
+
+.watermark-app {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--purple-neon);
+  text-shadow: 0 0 6px var(--purple-glow);
+}
+
+.watermark-author {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+}
+
+.watermark-author strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Ajuste sutil en pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .app-watermark {
+    bottom: 10px;
+    right: 12px;
+    opacity: 0.5;
+  }
+}

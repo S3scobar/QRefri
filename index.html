@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lista de la Nevera</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <!-- CDN oficial de Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Lista de Compras</h1>
+      <p class="subtitle">¿Qué hace falta en casa?</p>
+    </header>
+
+    <!-- Botones de Acceso Rápido / Habituales -->
+    <section class="quick-add">
+      <p class="section-label">Añadir rápido:</p>
+      <div class="quick-buttons">
+        <button type="button" class="btn-quick" data-item="Leche" data-cat="Nevera">Leche</button>
+        <button type="button" class="btn-quick" data-item="Huevos" data-cat="Nevera">Huevos</button>
+        <button type="button" class="btn-quick" data-item="Café" data-cat="Despensa">Café</button>
+        <button type="button" class="btn-quick" data-item="Papel higiénico" data-cat="Aseo">Papel higiénico</button>
+        <button type="button" class="btn-quick" data-item="Pan" data-cat="Despensa">Pan</button>
+      </div>
+    </section>
+
+    <!-- Formulario para agregar items -->
+    <form id="item-form" class="item-form">
+    <div class="input-row">
+        <input 
+        type="text" 
+        id="item-input" 
+        placeholder="Producto (ej. Tomates)" 
+        required 
+        autocomplete="off"
+        />
+        <input 
+        type="text" 
+        id="quantity-input" 
+        placeholder="Cant. (ej. 2, 1kg)" 
+        autocomplete="off"
+        />
+        <select id="category-select">
+        <option value="Nevera">🥦 Nevera</option>
+        <option value="Despensa">🥫 Despensa</option>
+        <option value="Aseo">🧼 Aseo</option>
+        <option value="Otros">🍳 Otros</option>
+        </select>
+    </div>
+    <button type="submit" id="btn-add">Agregar a la lista</button>
+    </form>
+
+    <!-- Barra de acciones -->
+    <div class="actions-bar">
+      <button id="btn-whatsapp" class="btn-secondary">Enviar a WhatsApp</button>
+      <button id="btn-clear-done" class="btn-danger-outline">Borrar comprados</button>
+    </div>
+
+    <!-- Lista de pendientes -->
+    <section class="list-section">
+      <h2>Pendientes (<span id="pending-count">0</span>)</h2>
+      <ul id="items-list" class="items-list">
+        <!-- Se llena con JS -->
+      </ul>
+    </section>
+
+    <!-- Lista de comprados -->
+    <section class="list-section completed-section">
+      <h2>Ya en el carrito (<span id="completed-count">0</span>)</h2>
+      <ul id="completed-list" class="items-list done">
+        <!-- Se llena con JS -->
+      </ul>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+  <footer class="app-watermark">
+    <span class="watermark-app">QRefri</span>
+    <span class="watermark-author">by <strong>Santiago Escobar</strong></span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
