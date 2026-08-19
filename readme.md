@@ -1,4 +1,12 @@
-# QRefri
+# QRefri — Gestor Inteligente de Despensa & Compras
+
+![Frontend](https://img.shields.io/badge/Frontend-HTML5%20%7C%20CSS3%20%7C%20JS-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+![Database](https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white)
+![Deployment](https://img.shields.io/badge/Deploy-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
+![UI](https://img.shields.io/badge/Theme-Cyberpunk%20Purple-a855f7?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Completado-22c55e?style=flat-square)
+
+---
 
 Una solución web colaborativa orientada a optimizar la gestión de suministros del hogar y centralizar las compras en tiempo real mediante acceso directo por código QR.
 
