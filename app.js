@@ -1,27 +1,30 @@
-// 1. Credenciales limpias (sin /rest/v1/ al final)
+// 1. Configuración de Supabase
 const SUPABASE_URL = 'https://cqmbptsgzfevsvlcvugh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxbWJwdHNnemZldnN2bGN2dWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwODk3MTUsImV4cCI6MjA2MjY2NTcxNX0.cSz4Rz1h2AhaLBXJmbaYL62zsR-EIWbiRSykF0UQI64';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Usamos 'db' para evitar colisión de nombres con la variable global de Supabase
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const TABLE_NAME = 'compras';
 
-// Variables
-let itemInput, categorySelect, searchInput;
+// Variables de elementos DOM
+let itemInput, categorySelect, searchInput, submitBtn;
 let shoppingListEl, fridgeListEl, shoppingCountEl, fridgeCountEl;
 let toastEl, quickChips, filterBtns;
 
 let items = [];
 let currentFilter = 'all';
 
+// Inicializar cuando el DOM cargue
 document.addEventListener('DOMContentLoaded', () => {
-    itemInput = document.getElementById('item-input') || document.getElementById('item-name');
-    categorySelect = document.getElementById('category-select') || document.getElementById('item-category');
-    searchInput = document.getElementById('search-input') || document.getElementById('search-items');
+    itemInput = document.getElementById('item-input');
+    categorySelect = document.getElementById('category-select');
+    submitBtn = document.getElementById('submit-btn');
+    searchInput = document.getElementById('search-input');
     
-    shoppingListEl = document.getElementById('shopping-list') || document.getElementById('shopping-items');
-    fridgeListEl = document.getElementById('fridge-list') || document.getElementById('fridge-items');
-    shoppingCountEl = document.getElementById('shopping-count') || document.getElementById('shopping-counter');
-    fridgeCountEl = document.getElementById('fridge-count') || document.getElementById('fridge-counter');
+    shoppingListEl = document.getElementById('shopping-list');
+    fridgeListEl = document.getElementById('fridge-list');
+    shoppingCountEl = document.getElementById('shopping-count');
+    fridgeCountEl = document.getElementById('fridge-count');
     
     toastEl = document.getElementById('toast');
     quickChips = document.querySelectorAll('.chip');
@@ -32,10 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setupRealtimeSubscription();
 });
 
-// Cargar productos
+// Cargar productos desde Supabase
 async function fetchItems() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await db
             .from(TABLE_NAME)
             .select('*')
             .order('created_at', { ascending: false });
@@ -54,21 +57,20 @@ async function fetchItems() {
 
 // Sincronización en tiempo real
 function setupRealtimeSubscription() {
-    supabase
-        .channel('compras-realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: TABLE_NAME }, () => {
-            fetchItems();
-        })
-        .subscribe();
+    db.channel('compras-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: TABLE_NAME }, () => {
+          fetchItems();
+      })
+      .subscribe();
 }
 
-// Renderizar elementos
+// Renderizar elementos y aplicar filtros
 function renderItems() {
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
     const filteredItems = items.filter(item => {
-        const name = (item.name || item.nombre || '').toLowerCase();
-        const category = (item.category || item.categoria || '');
+        const name = (item.name || '').toLowerCase();
+        const category = (item.category || '');
 
         const matchesQuery = name.includes(query) || category.toLowerCase().includes(query);
         const matchesFilter = currentFilter === 'all' || category.toLowerCase() === currentFilter.toLowerCase();
@@ -90,10 +92,10 @@ function renderItems() {
     }
 }
 
-// Plantilla de ítem
+// Plantilla de cada ítem
 function createItemHTML(item) {
-    const name = escapeHTML(item.name || item.nombre || '');
-    const category = escapeHTML(item.category || item.categoria || 'Nevera');
+    const name = escapeHTML(item.name || '');
+    const category = escapeHTML(item.category || 'Nevera');
     const isFridge = !!item.in_fridge;
     const catClass = category.toLowerCase();
 
@@ -117,40 +119,53 @@ function createItemHTML(item) {
     `;
 }
 
-// Función directa para agregar
-window.agregarProducto = async function() {
-    if (!itemInput) {
-        itemInput = document.getElementById('item-input') || document.getElementById('item-name');
-    }
-    if (!categorySelect) {
-        categorySelect = document.getElementById('category-select') || document.getElementById('item-category');
-    }
+// Función para añadir productos
+window.agregarProducto = async function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    if (!itemInput) itemInput = document.getElementById('item-input');
+    if (!categorySelect) categorySelect = document.getElementById('category-select');
+    if (!submitBtn) submitBtn = document.getElementById('submit-btn');
 
     const name = itemInput ? itemInput.value.trim() : '';
     const category = categorySelect ? categorySelect.value : 'Nevera';
 
     if (!name) {
-        alert('Escribe el nombre del producto primero');
+        alert('Por favor escribe el nombre de un producto');
         return;
     }
 
-    // Insertar en Supabase
-    const { data, error } = await supabase
-        .from(TABLE_NAME)
-        .insert([{ name: name, category: category, in_fridge: false }])
-        .select();
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Guardando...';
+    }
 
-    if (error) {
-        alert('Error al guardar en Supabase: ' + error.message);
-        console.error(error);
-    } else {
-        if (itemInput) itemInput.value = '';
-        showToast('Producto añadido 🛒', 'success');
-        await fetchItems();
+    try {
+        const { data, error } = await db
+            .from(TABLE_NAME)
+            .insert([{ name: name, category: category, in_fridge: false }])
+            .select();
+
+        if (error) {
+            alert('Error devuelto por Supabase: ' + error.message);
+            console.error('Error insertando:', error);
+        } else {
+            if (itemInput) itemInput.value = '';
+            showToast('Producto añadido 🛒', 'success');
+            await fetchItems();
+        }
+    } catch (err) {
+        alert('Error inesperado: ' + err.message);
+        console.error(err);
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Añadir a la Lista';
+        }
     }
 };
 
-// Event Listeners adicionales
+// Event Listeners (Buscador, Chips y Filtros)
 function setupEventListeners() {
     if (quickChips) {
         quickChips.forEach(chip => {
@@ -182,7 +197,7 @@ function setupEventListeners() {
     }
 }
 
-// Cambiar estado
+// Cambiar estado (Por comprar <-> En casa)
 window.toggleStatus = async (id, currentStatus) => {
     const newStatus = !currentStatus;
 
@@ -196,29 +211,29 @@ window.toggleStatus = async (id, currentStatus) => {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
     }
 
-    const { error } = await supabase
+    const { error } = await db
         .from(TABLE_NAME)
         .update({ in_fridge: newStatus })
         .eq('id', id);
 
     if (error) {
-        alert('Error en Supabase: ' + error.message);
+        alert('Error actualizando: ' + error.message);
         await fetchItems();
     }
 };
 
-// Eliminar
+// Eliminar producto
 window.deleteItem = async (id) => {
     items = items.filter(i => String(i.id) !== String(id));
     renderItems();
 
-    const { error } = await supabase
+    const { error } = await db
         .from(TABLE_NAME)
         .delete()
         .eq('id', id);
 
     if (error) {
-        alert('Error en Supabase: ' + error.message);
+        alert('Error eliminando: ' + error.message);
         await fetchItems();
     }
 };
