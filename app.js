@@ -1,13 +1,15 @@
-// Configuración de Supabase (coloca tus credenciales reales aquí)
-const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
+// 1. CREDENCIALES DE SUPABASE: COLOCA AQUÍ TUS CREDENCIALES REALES
+const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co'; 
 const SUPABASE_KEY = 'TU-ANON-KEY';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Nombre de la tabla en Supabase (si tu tabla es 'compras', déjalo en 'compras')
+const TABLE_NAME = 'compras';
 
 // Elementos del DOM
 const addForm = document.getElementById('add-form');
 const itemInput = document.getElementById('item-input');
 const categorySelect = document.getElementById('category-select');
-const storageSelect = document.getElementById('storage-select');
 const searchInput = document.getElementById('search-input');
 const shoppingListEl = document.getElementById('shopping-list');
 const fridgeListEl = document.getElementById('fridge-list');
@@ -19,7 +21,7 @@ const filterBtns = document.querySelectorAll('.filter-btn');
 
 // Estado local
 let items = [];
-let currentFilter = 'all'; // 'all' | 'nevera' | 'despensa'
+let currentFilter = 'all'; // 'all' | 'Nevera' | 'Despensa' | 'Aseo'
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
@@ -28,16 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
 });
 
-// Obtener registros de la tabla 'compras'
+// Cargar productos
 async function fetchItems() {
     const { data, error } = await supabase
-        .from('compras')
+        .from(TABLE_NAME)
         .select('*')
         .order('created_at', { ascending: false });
 
     if (error) {
-        showToast('Error al cargar la lista', 'error');
-        console.error(error);
+        showToast('Error al cargar datos: ' + error.message, 'error');
+        console.error('Error al cargar:', error);
         return;
     }
 
@@ -45,27 +47,26 @@ async function fetchItems() {
     renderItems();
 }
 
-// Sincronización en tiempo real vía WebSockets
+// Sincronización en tiempo real
 function setupRealtimeSubscription() {
     supabase
         .channel('custom-all-channel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'compras' }, () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: TABLE_NAME }, () => {
             fetchItems();
         })
         .subscribe();
 }
 
-// Renderizar listas con filtros (búsqueda y Nevera/Despensa)
+// Renderizado con filtros
 function renderItems() {
     const query = searchInput.value.toLowerCase().trim();
     
     const filteredItems = items.filter(item => {
         const name = (item.name || item.nombre || '').toLowerCase();
-        const category = (item.category || item.categoria || '').toLowerCase();
-        const matchesQuery = name.includes(query) || category.includes(query);
+        const category = (item.category || item.categoria || '');
 
-        const storage = item.storage_type || 'nevera';
-        const matchesFilter = currentFilter === 'all' || storage === currentFilter;
+        const matchesQuery = name.includes(query) || category.toLowerCase().includes(query);
+        const matchesFilter = currentFilter === 'all' || category.toLowerCase() === currentFilter.toLowerCase();
 
         return matchesQuery && matchesFilter;
     });
@@ -80,13 +81,15 @@ function renderItems() {
     fridgeListEl.innerHTML = fridgeItems.map(item => createItemHTML(item)).join('');
 }
 
-// Generar el HTML de cada producto
+// Plantilla HTML de cada producto
 function createItemHTML(item) {
     const name = escapeHTML(item.name || item.nombre || '');
-    const category = escapeHTML(item.category || item.categoria || '');
+    const category = escapeHTML(item.category || item.categoria || 'Nevera');
     const isFridge = !!item.in_fridge;
-    const storageType = item.storage_type || 'nevera';
-    const storageBadge = storageType === 'despensa' ? '🥫 Despensa' : '❄️ Nevera';
+    const catClass = category.toLowerCase();
+
+    const categoryIcon = catClass === 'despensa' ? '🥫 Despensa' :
+                         catClass === 'aseo' ? '🧹 Aseo' : '❄️ Nevera';
 
     return `
         <li class="item ${isFridge ? 'in-fridge' : ''}" data-id="${item.id}">
@@ -97,8 +100,7 @@ function createItemHTML(item) {
             <div class="item-details">
                 <span class="item-name">${name}</span>
                 <div class="item-tags">
-                    <span class="item-category">${category}</span>
-                    <span class="item-storage-tag ${storageType}">${storageBadge}</span>
+                    <span class="item-category-tag ${catClass}">${categoryIcon}</span>
                 </div>
             </div>
             <button class="delete-btn" onclick="deleteItem('${item.id}')" title="Eliminar">🗑️</button>
@@ -106,37 +108,36 @@ function createItemHTML(item) {
     `;
 }
 
-// Añadir nuevo producto a 'compras'
+// Añadir producto
 addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = itemInput.value.trim();
     const category = categorySelect.value;
-    const storage_type = storageSelect.value;
 
     if (!name) return;
 
-    // Compatible si tu columna se llama 'name' o 'nombre'
+    // Compatible tanto si tus columnas en Supabase se llaman en inglés (name, category) como en español (nombre, categoria)
     const newRecord = {
         name: name,
         category: category,
-        storage_type: storage_type,
         in_fridge: false
     };
 
     const { error } = await supabase
-        .from('compras')
+        .from(TABLE_NAME)
         .insert([newRecord]);
 
     if (error) {
-        showToast('Error al guardar el producto', 'error');
-        console.error(error);
+        // Muestra en el toast la razón exacta devuelta por Supabase
+        showToast('Error: ' + error.message, 'error');
+        console.error('Error insertando:', error);
     } else {
         itemInput.value = '';
-        showToast('Producto añadido a la lista 🛒', 'success');
+        showToast('Producto añadido 🛒', 'success');
     }
 });
 
-// Cambiar estado (Mover entre "Por comprar" y "En casa")
+// Cambiar estado (Por comprar <-> En casa)
 window.toggleStatus = async (id, currentStatus) => {
     const newStatus = !currentStatus;
     
@@ -146,40 +147,43 @@ window.toggleStatus = async (id, currentStatus) => {
         }
         showToast('¡Guardado en casa! ✨', 'success');
     } else {
-        showToast('Movido a lista de compras 🛒', 'info');
+        showToast('Movido a compras 🛒', 'info');
     }
 
     const { error } = await supabase
-        .from('compras')
+        .from(TABLE_NAME)
         .update({ in_fridge: newStatus })
         .eq('id', id);
 
     if (error) {
-        showToast('Error al actualizar el estado', 'error');
-        console.error(error);
+        showToast('Error: ' + error.message, 'error');
+        console.error('Error actualizando:', error);
     }
 };
 
 // Eliminar producto
 window.deleteItem = async (id) => {
     const { error } = await supabase
-        .from('compras')
+        .from(TABLE_NAME)
         .delete()
         .eq('id', id);
 
     if (error) {
-        showToast('Error al eliminar', 'error');
-        console.error(error);
+        showToast('Error al eliminar: ' + error.message, 'error');
+        console.error('Error eliminando:', error);
     } else {
         showToast('Producto eliminado', 'info');
     }
 };
 
-// Event Listeners (Buscador, Chips y Filtros)
+// Event Listeners
 function setupEventListeners() {
     quickChips.forEach(chip => {
         chip.addEventListener('click', () => {
             itemInput.value = chip.dataset.name;
+            if (chip.dataset.category) {
+                categorySelect.value = chip.dataset.category;
+            }
             itemInput.focus();
         });
     });
@@ -196,16 +200,16 @@ function setupEventListeners() {
     });
 }
 
-// Notificación Toast
+// Notificaciones flotantes
 function showToast(message, type = 'info') {
     toastEl.textContent = message;
     toastEl.className = `toast ${type}`;
     setTimeout(() => {
         toastEl.className = 'toast hidden';
-    }, 3000);
+    }, 3500);
 }
 
-// Sanitizar entradas de texto
+// Sanitizar HTML
 function escapeHTML(str) {
     return str.replace(/[&<>'"]/g, 
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
