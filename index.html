@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QRefri - Gestor de Despensa</title>
+    <title>QRefri</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="styles.css">
     <!-- Supabase JS Client -->
@@ -16,42 +16,30 @@
         <!-- Header -->
         <header>
             <h1>⚡ QRefri</h1>
-            <p class="subtitle">Gestor Inteligente de Despensa & Nevera</p>
+            <p class="subtitle">Gestor de Nevera, Despensa & Aseo</p>
         </header>
 
         <!-- Acceso Rápido -->
         <div class="quick-add">
             <span class="section-label">Acceso Rápido</span>
             <div class="quick-chips">
-                <button class="chip" data-name="Leche 🥛">🥛 Leche</button>
-                <button class="chip" data-name="Huevos 🥚">🥚 Huevos</button>
-                <button class="chip" data-name="Pan 🍞">🍞 Pan</button>
-                <button class="chip" data-name="Café ☕">☕ Café</button>
-                <button class="chip" data-name="Queso 🧀">🧀 Queso</button>
+                <button class="chip" data-name="Leche 🥛" data-category="Nevera">🥛 Leche</button>
+                <button class="chip" data-name="Huevos 🥚" data-category="Nevera">🥚 Huevos</button>
+                <button class="chip" data-name="Pan 🍞" data-category="Despensa">🍞 Pan</button>
+                <button class="chip" data-name="Café ☕" data-category="Despensa">☕ Café</button>
+                <button class="chip" data-name="Jabón 🧼" data-category="Aseo">🧼 Jabón</button>
             </div>
         </div>
 
-        <!-- Formulario para Añadir Producto -->
+        <!-- Formulario (Un solo selector de categoría) -->
         <form id="add-form" class="add-box">
             <input type="text" id="item-input" placeholder="¿Qué necesitas comprar u ordenar?" required autocomplete="off">
             
-            <div class="form-row">
-                <select id="category-select" required>
-                    <option value="Lácteos y Huevos">🥛 Lácteos y Huevos</option>
-                    <option value="Frutas y Verduras">🥦 Frutas y Verduras</option>
-                    <option value="Carnes y Pescados">🥩 Carnes y Pescados</option>
-                    <option value="Bebidas">🥤 Bebidas</option>
-                    <option value="Despensa y Granos">🌾 Despensa y Granos</option>
-                    <option value="Aseo y Hogar">🧹 Aseo y Hogar</option>
-                    <option value="Otros" selected>📦 Otros</option>
-                </select>
-
-                <!-- Selector de Ubicación -->
-                <select id="storage-select" required>
-                    <option value="nevera" selected>❄️ Nevera</option>
-                    <option value="despensa">🥫 Despensa</option>
-                </select>
-            </div>
+            <select id="category-select" required>
+                <option value="Nevera" selected>❄️ Nevera</option>
+                <option value="Despensa">🥫 Despensa</option>
+                <option value="Aseo">🧹 Aseo</option>
+            </select>
 
             <button type="submit" id="submit-btn">Añadir a la Lista</button>
         </form>
@@ -61,16 +49,17 @@
             <input type="text" id="search-input" placeholder="🔍 Buscar elemento...">
         </div>
 
-        <!-- Filtros Rápidos (Todos / Nevera / Despensa) -->
+        <!-- Filtros Rápidos -->
         <div class="filter-tabs">
             <button class="filter-btn active" data-filter="all">Todos</button>
-            <button class="filter-btn" data-filter="nevera">❄️ Nevera</button>
-            <button class="filter-btn" data-filter="despensa">🥫 Despensa</button>
+            <button class="filter-btn" data-filter="Nevera">❄️ Nevera</button>
+            <button class="filter-btn" data-filter="Despensa">🥫 Despensa</button>
+            <button class="filter-btn" data-filter="Aseo">🧹 Aseo</button>
         </div>
 
         <!-- Listas -->
         <main class="lists-container">
-            <!-- Sección Compras (Pendientes) -->
+            <!-- Por Comprar -->
             <section class="list-card">
                 <div class="list-header">
                     <h2>🛒 Por Comprar <span id="shopping-count" class="count-badge">0</span></h2>
@@ -78,10 +67,10 @@
                 <ul id="shopping-list" class="item-list"></ul>
             </section>
 
-            <!-- Sección En Casa (Guardados) -->
+            <!-- En Casa -->
             <section class="list-card">
                 <div class="list-header">
-                    <h2>❄️ En Casa (Nevera / Despensa) <span id="fridge-count" class="count-badge">0</span></h2>
+                    <h2>📦 En Casa <span id="fridge-count" class="count-badge">0</span></h2>
                 </div>
                 <ul id="fridge-list" class="item-list"></ul>
             </section>
