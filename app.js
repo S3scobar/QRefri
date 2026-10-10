@@ -1,176 +1,213 @@
-// Configuración de Supabase
-const SUPABASE_URL = 'https://cqmbptsgzfevsvlcvugh.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxbWJwdHNnemZldnN2bGN2dWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwODk3MTUsImV4cCI6MjEwMjY2NTcxNX0.cSz4Rz1h2AhaLBXJmbaYL62zsR-EIWbiRSykF0UQI64';
-
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Configuración de Supabase (coloca tus credenciales reales aquí)
+const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
+const SUPABASE_KEY = 'TU-ANON-KEY';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Elementos del DOM
-const form = document.getElementById('item-form');
-const input = document.getElementById('item-input');
-const qtyInput = document.getElementById('quantity-input');
+const addForm = document.getElementById('add-form');
+const itemInput = document.getElementById('item-input');
 const categorySelect = document.getElementById('category-select');
-const itemsList = document.getElementById('items-list');
-const completedList = document.getElementById('completed-list');
-const pendingCount = document.getElementById('pending-count');
-const completedCount = document.getElementById('completed-count');
-const btnWhatsapp = document.getElementById('btn-whatsapp');
-const btnClearDone = document.getElementById('btn-clear-done');
-const quickButtons = document.querySelectorAll('.btn-quick');
+const storageSelect = document.getElementById('storage-select');
+const searchInput = document.getElementById('search-input');
+const shoppingListEl = document.getElementById('shopping-list');
+const fridgeListEl = document.getElementById('fridge-list');
+const shoppingCountEl = document.getElementById('shopping-count');
+const fridgeCountEl = document.getElementById('fridge-count');
+const toastEl = document.getElementById('toast');
+const quickChips = document.querySelectorAll('.chip');
+const filterBtns = document.querySelectorAll('.filter-btn');
 
-let itemsState = [];
+// Estado local
+let items = [];
+let currentFilter = 'all'; // 'all' | 'nevera' | 'despensa'
 
-//Cargar items
+// Inicialización
+document.addEventListener('DOMContentLoaded', () => {
+    fetchItems();
+    setupRealtimeSubscription();
+    setupEventListeners();
+});
+
+// Obtener registros de la tabla 'compras'
 async function fetchItems() {
-  const { data, error } = await supabaseClient
-    .from('compras')
-    .select('*')
-    .order('creado_en', { ascending: false });
+    const { data, error } = await supabase
+        .from('compras')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error al cargar datos:', error);
-    return;
-  }
+    if (error) {
+        showToast('Error al cargar la lista', 'error');
+        console.error(error);
+        return;
+    }
 
-  itemsState = data || [];
-  render();
+    items = data || [];
+    renderItems();
 }
 
-// Renderizar listas
-function render() {
-  itemsList.innerHTML = '';
-  completedList.innerHTML = '';
-
-  const pending = itemsState.filter(item => !item.comprado);
-  const completed = itemsState.filter(item => item.comprado);
-
-  pendingCount.textContent = pending.length;
-  completedCount.textContent = completed.length;
-
-  pending.forEach(item => itemsList.appendChild(createItemElement(item)));
-  completed.forEach(item => completedList.appendChild(createItemElement(item)));
+// Sincronización en tiempo real vía WebSockets
+function setupRealtimeSubscription() {
+    supabase
+        .channel('custom-all-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'compras' }, () => {
+            fetchItems();
+        })
+        .subscribe();
 }
 
-function createItemElement(item) {
-  const li = document.createElement('li');
-  li.className = 'item-card';
+// Renderizar listas con filtros (búsqueda y Nevera/Despensa)
+function renderItems() {
+    const query = searchInput.value.toLowerCase().trim();
+    
+    const filteredItems = items.filter(item => {
+        const name = (item.name || item.nombre || '').toLowerCase();
+        const category = (item.category || item.categoria || '').toLowerCase();
+        const matchesQuery = name.includes(query) || category.includes(query);
 
-  const qtyBadge = item.cantidad ? `<span class="item-qty-badge">${item.cantidad}</span>` : '';
+        const storage = item.storage_type || 'nevera';
+        const matchesFilter = currentFilter === 'all' || storage === currentFilter;
 
-  li.innerHTML = `
-    <div class="item-left">
-      <input type="checkbox" class="item-checkbox" ${item.comprado ? 'checked' : ''}>
-      <div class="item-info">
-        <span class="item-title">${item.nombre} ${qtyBadge}</span>
-        <span class="item-badge">${item.categoria}</span>
-      </div>
-    </div>
-    <button class="btn-delete" title="Eliminar">✕</button>
-  `;
+        return matchesQuery && matchesFilter;
+    });
 
-  // Checkbox interactivo
-  const checkbox = li.querySelector('.item-checkbox');
-  checkbox.addEventListener('change', async () => {
-    await toggleItem(item.id, !item.comprado);
-  });
+    const shoppingItems = filteredItems.filter(item => !item.in_fridge);
+    const fridgeItems = filteredItems.filter(item => item.in_fridge);
 
-  // Eliminar
-  const deleteBtn = li.querySelector('.btn-delete');
-  deleteBtn.addEventListener('click', async () => {
-    await deleteItem(item.id);
-  });
+    shoppingCountEl.textContent = shoppingItems.length;
+    fridgeCountEl.textContent = fridgeItems.length;
 
-  return li;
+    shoppingListEl.innerHTML = shoppingItems.map(item => createItemHTML(item)).join('');
+    fridgeListEl.innerHTML = fridgeItems.map(item => createItemHTML(item)).join('');
 }
 
-//Acciones en la base de datos
-async function addItem(nombre, categoria, cantidad = '') {
-  if (!nombre.trim()) return;
+// Generar el HTML de cada producto
+function createItemHTML(item) {
+    const name = escapeHTML(item.name || item.nombre || '');
+    const category = escapeHTML(item.category || item.categoria || '');
+    const isFridge = !!item.in_fridge;
+    const storageType = item.storage_type || 'nevera';
+    const storageBadge = storageType === 'despensa' ? '🥫 Despensa' : '❄️ Nevera';
 
-  const { error } = await supabaseClient
-    .from('compras')
-    .insert([{ 
-      nombre: nombre.trim(), 
-      categoria: categoria, 
-      cantidad: cantidad.trim(), 
-      comprado: false 
-    }]);
-
-  if (error) {
-    console.error('Error al agregar:', error);
-  } else {
-    await fetchItems();
-  }
+    return `
+        <li class="item ${isFridge ? 'in-fridge' : ''}" data-id="${item.id}">
+            <label class="checkbox-container">
+                <input type="checkbox" ${isFridge ? 'checked' : ''} onchange="toggleStatus('${item.id}', ${isFridge})">
+                <span class="checkmark"></span>
+            </label>
+            <div class="item-details">
+                <span class="item-name">${name}</span>
+                <div class="item-tags">
+                    <span class="item-category">${category}</span>
+                    <span class="item-storage-tag ${storageType}">${storageBadge}</span>
+                </div>
+            </div>
+            <button class="delete-btn" onclick="deleteItem('${item.id}')" title="Eliminar">🗑️</button>
+        </li>
+    `;
 }
 
-async function toggleItem(id, status) {
-  const { error } = await supabaseClient
-    .from('compras')
-    .update({ comprado: status })
-    .eq('id', id);
+// Añadir nuevo producto a 'compras'
+addForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = itemInput.value.trim();
+    const category = categorySelect.value;
+    const storage_type = storageSelect.value;
 
-  if (error) console.error('Error al actualizar:', error);
-  else await fetchItems();
-}
+    if (!name) return;
 
-async function deleteItem(id) {
-  const { error } = await supabaseClient
-    .from('compras')
-    .delete()
-    .eq('id', id);
+    // Compatible si tu columna se llama 'name' o 'nombre'
+    const newRecord = {
+        name: name,
+        category: category,
+        storage_type: storage_type,
+        in_fridge: false
+    };
 
-  if (error) console.error('Error al borrar:', error);
-  else await fetchItems();
-}
+    const { error } = await supabase
+        .from('compras')
+        .insert([newRecord]);
 
-// 4. Event Listeners
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  await addItem(input.value, categorySelect.value, qtyInput.value);
-  input.value = '';
-  qtyInput.value = '';
-  input.focus();
+    if (error) {
+        showToast('Error al guardar el producto', 'error');
+        console.error(error);
+    } else {
+        itemInput.value = '';
+        showToast('Producto añadido a la lista 🛒', 'success');
+    }
 });
 
-// Botones rápidos
-quickButtons.forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const item = btn.getAttribute('data-item');
-    const cat = btn.getAttribute('data-cat');
-    await addItem(item, cat, '');
-  });
-});
+// Cambiar estado (Mover entre "Por comprar" y "En casa")
+window.toggleStatus = async (id, currentStatus) => {
+    const newStatus = !currentStatus;
+    
+    if (newStatus) {
+        if (typeof confetti === 'function') {
+            confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+        }
+        showToast('¡Guardado en casa! ✨', 'success');
+    } else {
+        showToast('Movido a lista de compras 🛒', 'info');
+    }
 
-// Borrar completados
-btnClearDone.addEventListener('click', async () => {
-  const confirmClear = confirm('¿Eliminar todos los productos comprados de la lista?');
-  if (!confirmClear) return;
+    const { error } = await supabase
+        .from('compras')
+        .update({ in_fridge: newStatus })
+        .eq('id', id);
 
-  const { error } = await supabaseClient
-    .from('compras')
-    .delete()
-    .eq('comprado', true);
+    if (error) {
+        showToast('Error al actualizar el estado', 'error');
+        console.error(error);
+    }
+};
 
-  if (error) console.error('Error al limpiar comprados:', error);
-  else await fetchItems();
-});
+// Eliminar producto
+window.deleteItem = async (id) => {
+    const { error } = await supabase
+        .from('compras')
+        .delete()
+        .eq('id', id);
 
-// Enviar a WhatsApp (con cantidad formateada)
-btnWhatsapp.addEventListener('click', () => {
-  const pending = itemsState.filter(item => !item.comprado);
-  if (pending.length === 0) {
-    alert('No hay productos pendientes en la lista.');
-    return;
-  }
+    if (error) {
+        showToast('Error al eliminar', 'error');
+        console.error(error);
+    } else {
+        showToast('Producto eliminado', 'info');
+    }
+};
 
-  let text = '🛒 *LISTA DE COMPRAS - CASA*\n\n';
-  pending.forEach(item => {
-    const qtyText = item.cantidad ? ` [${item.cantidad}]` : '';
-    text += `• ${item.nombre}${qtyText} _(${item.categoria})_\n`;
-  });
+// Event Listeners (Buscador, Chips y Filtros)
+function setupEventListeners() {
+    quickChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            itemInput.value = chip.dataset.name;
+            itemInput.focus();
+        });
+    });
 
-  const url = `https://wa.me/?text=${encodeURI(text)}`;
-  window.open(url, '_blank');
-});
+    searchInput.addEventListener('input', renderItems);
 
-// Carga inicial
-fetchItems();
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            renderItems();
+        });
+    });
+}
+
+// Notificación Toast
+function showToast(message, type = 'info') {
+    toastEl.textContent = message;
+    toastEl.className = `toast ${type}`;
+    setTimeout(() => {
+        toastEl.className = 'toast hidden';
+    }, 3000);
+}
+
+// Sanitizar entradas de texto
+function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+}
