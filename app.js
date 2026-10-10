@@ -1,6 +1,6 @@
 // 1. CREDENCIALES DE SUPABASE: COLOCA AQUÍ TUS CREDENCIALES REALES
-const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co'; 
-const SUPABASE_KEY = 'TU-ANON-KEY';
+const SUPABASE_URL = 'https://cqmbptsgzfevsvlcvugh.supabase.co/rest/v1/'; 
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxbWJwdHNnemZldnN2bGN2dWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwODk3MTUsImV4cCI6MjEwMjY2NTcxNX0.cSz4Rz1h2AhaLBXJmbaYL62zsR-EIWbiRSykF0UQI64';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Nombre de la tabla en Supabase (si tu tabla es 'compras', déjalo en 'compras')
