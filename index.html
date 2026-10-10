@@ -6,9 +6,8 @@
     <title>QRefri</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="styles.css">
-    <!-- Supabase JS Client -->
+    <!-- Librerías externas -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
@@ -23,16 +22,16 @@
         <div class="quick-add">
             <span class="section-label">Acceso Rápido</span>
             <div class="quick-chips">
-                <button class="chip" data-name="Leche 🥛" data-category="Nevera">🥛 Leche</button>
-                <button class="chip" data-name="Huevos 🥚" data-category="Nevera">🥚 Huevos</button>
-                <button class="chip" data-name="Pan 🍞" data-category="Despensa">🍞 Pan</button>
-                <button class="chip" data-name="Café ☕" data-category="Despensa">☕ Café</button>
-                <button class="chip" data-name="Jabón 🧼" data-category="Aseo">🧼 Jabón</button>
+                <button type="button" class="chip" data-name="Leche 🥛" data-category="Nevera">🥛 Leche</button>
+                <button type="button" class="chip" data-name="Huevos 🥚" data-category="Nevera">🥚 Huevos</button>
+                <button type="button" class="chip" data-name="Pan 🍞" data-category="Despensa">🍞 Pan</button>
+                <button type="button" class="chip" data-name="Café ☕" data-category="Despensa">☕ Café</button>
+                <button type="button" class="chip" data-name="Jabón 🧼" data-category="Aseo">🧼 Jabón</button>
             </div>
         </div>
 
-        <!-- Formulario (Un solo selector de categoría) -->
-        <form id="add-form" class="add-box">
+        <!-- Formulario para Añadir Producto -->
+        <form id="add-form" class="add-box" onsubmit="event.preventDefault(); agregarProducto(); return false;">
             <input type="text" id="item-input" placeholder="¿Qué necesitas comprar u ordenar?" required autocomplete="off">
             
             <select id="category-select" required>
@@ -41,7 +40,7 @@
                 <option value="Aseo">🧹 Aseo</option>
             </select>
 
-            <button type="button" id="submit-btn" onclick="agregarProducto()">Añadir a la Lista</button>
+            <button type="button" id="submit-btn" onclick="agregarProducto();">Añadir a la Lista</button>
         </form>
 
         <!-- Barra de Búsqueda -->
@@ -49,12 +48,12 @@
             <input type="text" id="search-input" placeholder="🔍 Buscar elemento...">
         </div>
 
-        <!-- Filtros Rápidos -->
+        <!-- Filtros Rápidos (Todos, Nevera, Despensa, Aseo) -->
         <div class="filter-tabs">
-            <button class="filter-btn active" data-filter="all">Todos</button>
-            <button class="filter-btn" data-filter="Nevera">❄️ Nevera</button>
-            <button class="filter-btn" data-filter="Despensa">🥫 Despensa</button>
-            <button class="filter-btn" data-filter="Aseo">🧹 Aseo</button>
+            <button type="button" class="filter-btn active" data-filter="all">Todos</button>
+            <button type="button" class="filter-btn" data-filter="Nevera">❄️ Nevera</button>
+            <button type="button" class="filter-btn" data-filter="Despensa">🥫 Despensa</button>
+            <button type="button" class="filter-btn" data-filter="Aseo">🧹 Aseo</button>
         </div>
 
         <!-- Listas -->
@@ -77,9 +76,10 @@
         </main>
     </div>
 
-    <!-- Notificaciones Toast -->
+    <!-- Notificaciones flotantes -->
     <div id="toast" class="toast hidden"></div>
 
+    <!-- Script único al final -->
     <script src="app.js"></script>
 </body>
 </html>
