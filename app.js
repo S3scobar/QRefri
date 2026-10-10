@@ -1,23 +1,19 @@
-// 1. Configuración de Supabase
+// 1. Credenciales limpias (sin /rest/v1/ al final)
 const SUPABASE_URL = 'https://cqmbptsgzfevsvlcvugh.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxbWJwdHNnemZldnN2bGN2dWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwODk3MTUsImV4cCI6MjEwMjY2NTcxNX0.cSz4Rz1h2AhaLBXJmbaYL62zsR-EIWbiRSykF0UQI64';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxbWJwdHNnemZldnN2bGN2dWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwODk3MTUsImV4cCI6MjA2MjY2NTcxNX0.cSz4Rz1h2AhaLBXJmbaYL62zsR-EIWbiRSykF0UQI64';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const TABLE_NAME = 'compras';
 
-// 2. Variables de elementos del DOM (compatibles con ambas nomenclaturas de ID)
-let addForm, itemInput, categorySelect, searchInput;
+// Variables
+let itemInput, categorySelect, searchInput;
 let shoppingListEl, fridgeListEl, shoppingCountEl, fridgeCountEl;
 let toastEl, quickChips, filterBtns;
 
-// Estado local
 let items = [];
-let currentFilter = 'all'; // 'all' | 'Nevera' | 'Despensa' | 'Aseo'
+let currentFilter = 'all';
 
-// 3. Inicialización cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    // Buscar elementos aceptando ambos IDs
-    addForm = document.getElementById('add-form') || document.getElementById('add-item-form');
     itemInput = document.getElementById('item-input') || document.getElementById('item-name');
     categorySelect = document.getElementById('category-select') || document.getElementById('item-category');
     searchInput = document.getElementById('search-input') || document.getElementById('search-items');
@@ -36,34 +32,37 @@ document.addEventListener('DOMContentLoaded', () => {
     setupRealtimeSubscription();
 });
 
-// 4. Cargar productos desde Supabase
+// Cargar productos
 async function fetchItems() {
-    const { data, error } = await supabase
-        .from(TABLE_NAME)
-        .select('*')
-        .order('created_at', { ascending: false });
+    try {
+        const { data, error } = await supabase
+            .from(TABLE_NAME)
+            .select('*')
+            .order('created_at', { ascending: false });
 
-    if (error) {
-        showToast('Error cargando: ' + error.message, 'error');
-        console.error('Error al cargar:', error);
-        return;
+        if (error) {
+            console.error('Error al cargar:', error);
+            return;
+        }
+
+        items = data || [];
+        renderItems();
+    } catch (err) {
+        console.error('Error de conexión:', err);
     }
-
-    items = data || [];
-    renderItems();
 }
 
-// 5. Suscripción en tiempo real
+// Sincronización en tiempo real
 function setupRealtimeSubscription() {
     supabase
-        .channel('custom-all-channel')
+        .channel('compras-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: TABLE_NAME }, () => {
             fetchItems();
         })
         .subscribe();
 }
 
-// 6. Renderizar listas y aplicar filtros
+// Renderizar elementos
 function renderItems() {
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
@@ -91,7 +90,7 @@ function renderItems() {
     }
 }
 
-// 7. Generar HTML de cada elemento
+// Plantilla de ítem
 function createItemHTML(item) {
     const name = escapeHTML(item.name || item.nombre || '');
     const category = escapeHTML(item.category || item.categoria || 'Nevera');
@@ -118,36 +117,41 @@ function createItemHTML(item) {
     `;
 }
 
-// 8. Event Listeners
-function setupEventListeners() {
-    if (addForm) {
-        addForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = itemInput ? itemInput.value.trim() : '';
-            const category = categorySelect ? categorySelect.value : 'Nevera';
-
-            if (!name) return;
-
-            const newRecord = {
-                name: name,
-                category: category,
-                in_fridge: false
-            };
-
-            const { error } = await supabase
-                .from(TABLE_NAME)
-                .insert([newRecord]);
-
-            if (error) {
-                showToast('Error al guardar: ' + error.message, 'error');
-                console.error(error);
-            } else {
-                if (itemInput) itemInput.value = '';
-                showToast('Producto añadido 🛒', 'success');
-            }
-        });
+// Función directa para agregar
+window.agregarProducto = async function() {
+    if (!itemInput) {
+        itemInput = document.getElementById('item-input') || document.getElementById('item-name');
+    }
+    if (!categorySelect) {
+        categorySelect = document.getElementById('category-select') || document.getElementById('item-category');
     }
 
+    const name = itemInput ? itemInput.value.trim() : '';
+    const category = categorySelect ? categorySelect.value : 'Nevera';
+
+    if (!name) {
+        alert('Escribe el nombre del producto primero');
+        return;
+    }
+
+    // Insertar en Supabase
+    const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .insert([{ name: name, category: category, in_fridge: false }])
+        .select();
+
+    if (error) {
+        alert('Error al guardar en Supabase: ' + error.message);
+        console.error(error);
+    } else {
+        if (itemInput) itemInput.value = '';
+        showToast('Producto añadido 🛒', 'success');
+        await fetchItems();
+    }
+};
+
+// Event Listeners adicionales
+function setupEventListeners() {
     if (quickChips) {
         quickChips.forEach(chip => {
             chip.addEventListener('click', () => {
@@ -178,17 +182,18 @@ function setupEventListeners() {
     }
 }
 
-// 9. Cambiar estado (Por comprar <-> En casa)
+// Cambiar estado
 window.toggleStatus = async (id, currentStatus) => {
     const newStatus = !currentStatus;
+
+    const target = items.find(i => String(i.id) === String(id));
+    if (target) {
+        target.in_fridge = newStatus;
+        renderItems();
+    }
     
-    if (newStatus) {
-        if (typeof confetti === 'function') {
-            confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
-        }
-        showToast('¡Guardado en casa! ✨', 'success');
-    } else {
-        showToast('Movido a compras 🛒', 'info');
+    if (newStatus && typeof confetti === 'function') {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
     }
 
     const { error } = await supabase
@@ -197,35 +202,38 @@ window.toggleStatus = async (id, currentStatus) => {
         .eq('id', id);
 
     if (error) {
-        showToast('Error: ' + error.message, 'error');
+        alert('Error en Supabase: ' + error.message);
+        await fetchItems();
     }
 };
 
-// 10. Eliminar producto
+// Eliminar
 window.deleteItem = async (id) => {
+    items = items.filter(i => String(i.id) !== String(id));
+    renderItems();
+
     const { error } = await supabase
         .from(TABLE_NAME)
         .delete()
         .eq('id', id);
 
     if (error) {
-        showToast('Error al eliminar: ' + error.message, 'error');
-    } else {
-        showToast('Producto eliminado', 'info');
+        alert('Error en Supabase: ' + error.message);
+        await fetchItems();
     }
 };
 
-// 11. Toast de notificación
+// Toast
 function showToast(message, type = 'info') {
     if (!toastEl) return;
     toastEl.textContent = message;
     toastEl.className = `toast ${type}`;
     setTimeout(() => {
         toastEl.className = 'toast hidden';
-    }, 3500);
+    }, 3000);
 }
 
-// 12. Sanitizar texto
+// Sanitizar
 function escapeHTML(str) {
     return String(str).replace(/[&<>'"]/g, 
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
