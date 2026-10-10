@@ -135,7 +135,12 @@ header h1 {
   opacity: 0.95;
 }
 
-/* Filtros en pestañas */
+#submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Filtros por pestaña */
 .filter-tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -302,11 +307,6 @@ header h1 {
   transition: opacity 0.3s;
   max-width: 90%;
   text-align: center;
-}
-
-.toast.error {
-  border-color: var(--red);
-  color: #fca5a5;
 }
 
 .toast.hidden {
